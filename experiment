@@ -1,7 +1,7 @@
 import sqlite3
 import tkinter as tk
 
-
+# a comment
 
 def create_customer():
     color1 = ("#00A6FB")
