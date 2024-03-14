@@ -1,0 +1,143 @@
+import sqlite3
+import tkinter as tk
+
+
+
+def create_customer():
+    color1 = ("#00A6FB")
+    mainMenu = tk.Tk()
+
+    custNameLabel = tk.Label(mainMenu, text = "Customer Name", bg=color1)
+    custNameLabel.pack()
+    custNameEnt = tk.Entry(mainMenu, width=20)
+    custNameEnt.pack()
+
+
+    custEmailLabel = tk.Label(mainMenu, text = "Customer Email", bg=color1)
+    custEmailLabel.pack()
+    custEmailEnt = tk.Entry(mainMenu, width=20)
+    custEmailEnt.pack()
+
+
+    custNumLabel = tk.Label(mainMenu, text = "Customer Number", bg=color1)
+    custNumLabel.pack()
+    custNumEnt = tk.Entry(mainMenu, width=20)
+    custNumEnt.pack()
+
+
+    custRepLabel = tk.Label(mainMenu, text = "Customer Rep Name", bg=color1)
+    custRepLabel.pack()
+    custRepEnt = tk.Entry(mainMenu, width=20)
+    custRepEnt.pack()
+
+
+    custAddLabel = tk.Label(mainMenu, text = "Customer Address", bg=color1)
+    custAddLabel.pack()
+    custAddEnt = tk.Entry(mainMenu, width=20)
+    custAddEnt.pack()
+
+    addButton = tk.Button(mainMenu, text = "Add Customer", command= lambda: insert_new_customer(custNameEnt, custEmailEnt, custNumEnt, custRepEnt, custAddEnt, mainMenu))
+     #[genCustButton(), addDataBase()], padx=20, pady=25, bg=color3, fg="white")
+    addButton.pack()
+    mainMenu.mainloop()
+
+def insert_new_customer(custNameEnt, custEmailEnt, custNumEnt, custRepEnt, custAddEnt, mainMenu):
+    name = custNameEnt.get()
+    email = custEmailEnt.get()
+    phone = custNumEnt.get()
+    rep_name = custRepEnt.get()
+    addent = custAddEnt.get()
+    my_data = (name, email, phone, rep_name, addent)
+
+    cursor.execute("INSERT INTO customer (customerName, customerEmail, customerNumber, repName, custAddress) VALUES(?,?,?,?,?)", my_data)
+    conn.commit()
+    print("done it")
+
+def create_opp():
+    #return
+    the_customers = cursor.execute("SELECT * FROM customer").fetchall()
+    edit_customer = tk.Tk()
+    edit_customer.title("Select an customer")
+    customerlist = tk.Listbox(edit_customer, width=40, height=20)
+    scrollbar = tk.Scrollbar(edit_customer, command=customerlist.yview)
+    customerlist.config(yscrollcommand=scrollbar.set)
+    for x in range(len(the_customers)):
+        customerlist.insert("end", the_customers[x])
+    customerlist.pack(side="left", fill="both", expand=True)
+    scrollbar.pack(side="right", fill="y")
+    #activate an event when an item is selected
+    customerlist.bind("<<ListboxSelect>>", lambda event: customer_selected(event, customerlist, edit_customer, the_customers))
+    edit_customer.mainloop()
+
+
+def customer_selected(event, customerlist, edit_customer, the_customers):
+    selected_index = customerlist.curselection()[0]
+   
+    customer_id = the_customers[selected_index][0]
+    customer_name = the_customers[selected_index][1]
+    customer_email= the_customers[selected_index][2]
+    #edit_customer.destroy()
+    the_customer_opps = cursor.execute("SELECT oppName FROM opp WHERE customerID = (?)", (customer_id,)).fetchall()
+    print("customer "+ str(customer_id)+ " opps are " + str(the_customer_opps))
+
+
+    opp_w = tk.Tk()
+    cust_id_label = tk.Label(opp_w, text = customer_id ).pack(pady = 10)
+    cust_name_label = tk.Label(opp_w, text = customer_name ).pack(pady = 10)
+    cust_email_label = tk.Label(opp_w, text = customer_email ).pack(pady = 10)
+    cust_opp_label = tk.Label(opp_w, text = "Opportunity name" ).pack(pady = 10)
+    cust_opp_entry = tk.Entry(opp_w)
+    cust_opp_entry.pack(pady = 10)
+    addoppButton = tk.Button(opp_w, text = "Add opportunity", command= lambda: insert_new_opp(customer_id, cust_opp_entry, opp_w))
+    addoppButton.pack()
+    for i in range(len(the_customer_opps)):
+        opp_butt = tk.Button(opp_w, text = the_customer_opps[i][0] ) # command = lambda opp_id = the_customer_opps[i][0]: get_opp_details(opp_id)===note: def to fetch the record in this
+        opp_butt.pack(pady = 10)
+
+
+
+def insert_new_opp(customer_id, cust_opp_entry, opp_w):
+
+
+    cursor.execute("INSERT INTO opp (oppName, customerID) VALUES (?, ?)", (cust_opp_entry.get(), customer_id))
+    conn.commit()
+    the_customer_opps = cursor.execute("SELECT oppName FROM opp WHERE customerID = (?)", (customer_id,)).fetchall()
+    print("customer "+ str(customer_id)+ " opps are " + str(the_customer_opps))
+    opp_w.destroy()
+
+def  start():
+    start_menu = tk.Tk()
+    addcustButton = tk.Button(start_menu, text = "Add customer", command= lambda:create_customer() )
+    addcustButton.pack()
+    addoppButton = tk.Button(start_menu, text = "Add opportunity", command= lambda:create_opp() )
+    addoppButton.pack()
+    start_menu.mainloop()
+
+# having the connection here means database connection is in scope for all defs
+conn = sqlite3.connect('CustomerInfo2.db')
+cursor = conn.cursor()
+cursor.execute("""CREATE TABLE IF NOT EXISTS customer (
+       customerID INTEGER PRIMARY KEY AUTOINCREMENT,
+       customerName TEXT,
+       customerEmail TEXT,
+       customerNumber INTEGER,
+       repName TEXT,
+       custAddress TEXT
+                )""")
+cursor.execute("""CREATE TABLE IF NOT EXISTS opp (
+        oppID INTEGER PRIMARY KEY AUTOINCREMENT,
+        customerID INTEGER,
+        oppName TEXT,
+        oppStage TEXT,
+        oppStart TEXT,
+        oppClose TEXT,
+        oppVal INTEGER,
+        oppProb INTEGER,
+        oppCont TEXT,
+        oppFC TEXT,
+        FOREIGN KEY(customerID) REFERENCES customer(customerID)
+               )
+        """)
+
+
+start()
